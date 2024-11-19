@@ -43,6 +43,8 @@ thread_data_t thread_data[MAX_THREADS];
 
 pthread_barrier_t barrier_start, barrier_end;
 
+chronometer_t chrono;
+
 // void *find_P(void *arg) {
 
 //     while (1) {
@@ -156,13 +158,62 @@ pthread_barrier_t barrier_start, barrier_end;
 //     return Pos;
 // }
 
+void multi_partition(long long *Input, int n, 
+                     long long *P, int np, 
+                     long long *Output, int *Pos) {
+
+    static int initialized = 0;
+    llong *Pos = create_array(np);
+    // llong Pos_partial[num_threads];
+
+    // encontra cada um dos valores de P
+    for (llong qpos = 0; qpos < P_size; qpos++) {
+        // inicializa a thread dando uma parte do vetor P para cada thread resolver
+        if (!initialized) {
+            initialize_data(Input, Input_size, num_threads, P, qpos);
+            initialized = 1;
+        }
+        else {
+            for (int i = 0; i < num_threads; i++) {
+                // associando a valor de pesquisa atual
+                thread_data[i].q = P[qpos];
+            }
+        }
+
+        chrono_start(&chrono);
+
+        // entra na barreira para que as threads iniciem a execução
+        pthread_barrier_wait(&barrier_start);
+
+        // espera threads terminarem iteração para retornar o resultado de Pos
+        pthread_barrier_wait(&barrier_end);
+
+        chrono_stop(&chrono);
+
+        // cria um novo vetor com os valores das posições dados por cada thread
+        for (int i = 0; i < num_threads; i++) {
+            Pos_partial[i] = Input[thread_data[i].pos];
+        }
+
+        #if DEBUG
+        printf("Pos_partial: ");
+        print_array(Pos_partial, num_threads);
+        #endif
+
+        // posição de q no vetor Inuput
+        Pos[qpos] = thread_data[my_bsearch(Pos_partial, num_threads, P[qpos])].pos;
+    }
+
+    return Pos;
+}
+
+
 int main(int argc, char **argv) {
     srand(time(NULL));
 
-    chronometer_t chrono;
     llong Input_size;
     llong P_size, *Output = NULL;
-    int num_threads;
+    int num_threads, *Pos;
 
     if (!checkEntry(argc, argv, &Input_size, &P_size, &num_threads)) {
         exit(EXIT_FAILURE);
@@ -200,8 +251,7 @@ int main(int argc, char **argv) {
         printf("\n");
         #endif
 
-        chrono_start(&chrono);
-        int Pos[5] = {1, 2, 3, 4, 5};
+        multi_partition(Input, Input_size, P, P_size, Output, Pos);
         chrono_stop(&chrono);
 
         #if DEBUG
