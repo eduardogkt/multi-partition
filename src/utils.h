@@ -31,7 +31,10 @@
 #define N_TESTS 1
 
 // imprime o array de elementos tipo llong
-void print_array(llong *array, llong n_memb);
+void print_array_llong(llong *array, llong n_memb);
+
+// imprime o array de elementos tipo int
+void print_array_int(int *array, llong n_memb);
 
 // cria uma array de elementos tipo llong
 // o vetor pode ser preenchido com valores aleatórios e ordenado

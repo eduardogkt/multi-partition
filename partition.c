@@ -24,6 +24,7 @@ n = 16000000 por default
 
 #include "src/chrono.h"
 #include "src/utils.h"
+#include "src/verifica_particoes.h"
 
 typedef struct thread_data {
     int id;            // id da tarefa/thread
@@ -32,7 +33,9 @@ typedef struct thread_data {
 } thread_data_t;
 
 llong InputG[MAX_SIZE];  // vetor global de input
+llong OutputG[MAX_SIZE];      // vetor global de posições
 llong PG[MAX_SIZE];      // vetor global de posições
+llong PosG[MAX_SIZE];      // vetor global de posições
 
 pthread_t threads[MAX_THREADS];
 thread_data_t thread_data[MAX_THREADS];
@@ -157,7 +160,7 @@ int main(int argc, char **argv) {
 
     chronometer_t chrono;
     llong Input_size = INPUT_SIZE;
-    llong P_size;
+    llong P_size, *Output = NULL;
     int num_threads;
 
     if (!checkEntry(argc, argv, &P_size, &num_threads)) {
@@ -190,30 +193,31 @@ int main(int argc, char **argv) {
 
         printf("num threads: %d\n", num_threads);
         printf("Input (%lld): ", Input_size);
-        print_array(Input, Input_size);
+        print_array_llong(Input, Input_size);
         printf("P (%lld): ", P_size);
-        print_array(P, P_size);
+        print_array_llong(P, P_size);
         printf("\n");
         #endif
 
         chrono_start(&chrono);
-        llong Pos[5] = {1, 2, 3, 4, 5};
+        int Pos[5] = {1, 2, 3, 4, 5};
         chrono_stop(&chrono);
 
         #if DEBUG
         printf("\nfinal Pos: ");
-        print_array(Pos, P_size);
+        print_array_int(Pos, P_size);
         printf("\n\n");
         #endif
 
         // free(Pos);
+        verifica_particoes(Input, Input_size, P, P_size, Output, Pos);
     }
 
-    llong total_searches = (double) P_size * N_TESTS;
+    llong total_partitioned = (double) P_size * N_TESTS;
     double total_time_ns = (double) chrono_gettotal(&chrono);
     double total_time_s = total_time_ns / (1000.0 * 1000.0 * 1000.0);
     
-    float throughput = (double) (total_searches / total_time_s) / 1e6;
+    float throughput = (double) (total_partitioned / total_time_s) / 1e6;
     
     printf("Vazao: %.2f\n", throughput);
     printf("Tempo: %lf\n", total_time_s);
