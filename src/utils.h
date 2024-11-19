@@ -17,14 +17,9 @@
 #define SIZE_8M 8000000
 #define SIZE_16M 16000000
 
-// #define INPUT_SIZE SIZE_1M
-// #define OUTPUT_SIZE INPUT_SIZE
-// #define P_SIZE SIZE_100K
-// #define POS_SIZE P_SIZE
-
-#define INPUT_SIZE 100
+#define INPUT_SIZE SIZE_1M
 #define OUTPUT_SIZE INPUT_SIZE
-#define P_SIZE 4
+#define P_SIZE SIZE_100K
 #define POS_SIZE P_SIZE
 
 // quantidade de testes realizados
@@ -47,6 +42,6 @@ llong *copy_array(llong *original, llong n_memb);
 void initialize_global_arrays(llong *InputG, llong Input_size, llong* QG, llong Q_size);
 
 // checa os parametros de entrada para garantir que estão no formato correto
-int checkEntry(int argc, char **argv, llong *P_size, int *num_threads);
+int checkEntry(int argc, char **argv, llong *Input_size, llong *P_size, int *num_threads);
 
 #endif

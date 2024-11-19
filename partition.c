@@ -21,6 +21,7 @@ n = 16000000 por default
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/time.h>
+#include <limits.h>
 
 #include "src/chrono.h"
 #include "src/utils.h"
@@ -33,9 +34,9 @@ typedef struct thread_data {
 } thread_data_t;
 
 llong InputG[MAX_SIZE];  // vetor global de input
-llong OutputG[MAX_SIZE];      // vetor global de posições
+llong OutputG[MAX_SIZE]; // vetor global de saída
 llong PG[MAX_SIZE];      // vetor global de posições
-llong PosG[MAX_SIZE];      // vetor global de posições
+llong PosG[MAX_SIZE];    // vetor global de indices
 
 pthread_t threads[MAX_THREADS];
 thread_data_t thread_data[MAX_THREADS];
@@ -159,11 +160,11 @@ int main(int argc, char **argv) {
     srand(time(NULL));
 
     chronometer_t chrono;
-    llong Input_size = INPUT_SIZE;
+    llong Input_size;
     llong P_size, *Output = NULL;
     int num_threads;
 
-    if (!checkEntry(argc, argv, &P_size, &num_threads)) {
+    if (!checkEntry(argc, argv, &Input_size, &P_size, &num_threads)) {
         exit(EXIT_FAILURE);
     }
 

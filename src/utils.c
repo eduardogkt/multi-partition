@@ -105,28 +105,41 @@ void initialize_global_arrays(llong *InputG, llong Input_size, llong* PG, llong 
     }
 }
 
-int checkEntry(int argc, char **argv, llong *P_size, int *num_threads) {
+int checkEntry(int argc, char **argv, llong *Input_size, llong *P_size, int *num_threads) {
 
     if (argc < 3) {
-        fprintf(stderr, "uso: %s <P_size> <num_threads>\n", argv[0]);
+        fprintf(stderr, "uso: %s <Input_size> <P_size> <num_threads>\n", argv[0]);
         return 0;
     }
 
-    *P_size = atoi(argv[1]);
-    *num_threads = atoi(argv[2]);
+    *Input_size = atoi(argv[1]);
+    *P_size = atoi(argv[2]);
+    *num_threads = atoi(argv[3]);
 
-    if (*num_threads == 0) {
-        fprintf(stderr, "uso: %s <P_size> <num_threads>\n", argv[0]);
+    if (*Input_size <= 0) {
+        fprintf(stderr, "uso: %s <Input_size> <P_size> <num_threads>\n", argv[0]);
+        fprintf(stderr, "<Input_size> deve ser maior que 0\n");
+        return 0;
+    }
+    if (*Input_size > MAX_SIZE) {
+        fprintf(stderr, "uso: %s <Input_size> <num_threads> <opt:Q_size>\n", argv[0]);
+        fprintf(stderr, "<Input_size> deve ser no máximo %d\n", MAX_SIZE);
+        return 0;
+    }
+
+    if (*num_threads <= 0) {
+        fprintf(stderr, "uso: %s <Input_size> <P_size> <num_threads>\n", argv[0]);
         fprintf(stderr, "<num_threads> deve ser maior que 0\n");
         return 0;
     }
     if (*num_threads > MAX_THREADS) {
-        fprintf(stderr, "uso: %s <P_size> <num_threads>\n", argv[0]);
+        fprintf(stderr, "uso: %s <Input_size> <P_size> <num_threads>\n", argv[0]);
         fprintf(stderr, "<num_threads> deve ser menor que %d\n", MAX_THREADS);
         return 0;
     }
+
     if (*P_size <= 0) {
-        fprintf(stderr, "uso: %s <P_size> <num_threads>\n", argv[0]);
+        fprintf(stderr, "uso: %s <Input_size> <P_size> <num_threads>\n", argv[0]);
         fprintf(stderr, "<P_size> deve ser maior que 0\n");
         return 0;
     }
