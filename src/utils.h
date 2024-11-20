@@ -9,7 +9,7 @@
 #if DEBUG
 #define MAX_SIZE (89 * 1000 * 1000)
 #else
-#define MAX_SIZE (100 * 1000 * 1000)
+#define MAX_SIZE (89 * 1000 * 1000)
 #endif
 
 // valores de entrada para testes
@@ -28,6 +28,8 @@
 // quantidade de testes realizados
 #define N_TESTS 10
 
+int compar(const void *a, const void *b);
+
 // imprime o array de elementos tipo llong
 void print_array_llong(llong *array, llong n_memb);
 
@@ -42,9 +44,11 @@ llong *create_array(llong num_memb, int fill);
 llong *copy_array(llong *original, llong n_memb);
 
 // inicializa os vetores globais com sequencias de valores aleatorios
-void initialize_global_arrays(llong *InputG, llong Input_size, llong *PG, llong P_size);
+void initialize_global_arrays(llong *InputG, int Input_size, llong *PG, int P_size);
 
 // checa os parametros de entrada para garantir que estão no formato correto
-int checkEntry(int argc, char **argv, llong *Input_size, llong *P_size, int *num_threads);
+int checkEntry(int argc, char **argv, 
+               int *Input_size, int *P_size, 
+               int *num_threads);
 
 #endif

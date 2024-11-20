@@ -159,15 +159,15 @@ chronometer_t chrono;
 // }
 
 void multi_partition(llong *Input, int Input_size, 
-                     llong *P, llong P_size, 
+                     llong *P, int P_size, 
                      llong *Output, int *Pos, 
                      int num_threads) {
 
     static int initialized = 0;
-    // Pos = create_array(P_size, 1);
-    // Output = create_array(Input_size, 0);
 
-    memcpy(Output, Input, Input_size);
+    // cria um cópia ordenada do vetor de entrada
+    memcpy(Output, Input, Input_size * sizeof(llong));
+    qsort(Output, Input_size, sizeof(llong), compar);
 
     // encontra cada um dos valores de P
     // for (llong qpos = 0; qpos < P_size; qpos++) {
@@ -212,8 +212,7 @@ void multi_partition(llong *Input, int Input_size,
 int main(int argc, char **argv) {
     srand(time(NULL));
 
-    llong Input_size, P_size;
-    int num_threads;
+    int Input_size, P_size, num_threads;
 
     if (!checkEntry(argc, argv, &Input_size, &P_size, &num_threads)) {
         exit(EXIT_FAILURE);
@@ -250,14 +249,16 @@ int main(int argc, char **argv) {
         printf("P_start: %lld\n", P_start);
 
         printf("num threads: %d\n", num_threads);
-        printf("Input (%lld): ", Input_size);
+        printf("Input (%d): ", Input_size);
         print_array_llong(Input, Input_size);
-        printf("P (%lld): ", P_size);
+        printf("P (%d): ", P_size);
         print_array_llong(P, P_size);
         printf("\n");
         #endif
 
+        chrono_start(&chrono);
         multi_partition(Input, Input_size, P, P_size, Output, Pos, num_threads);
+        chrono_stop(&chrono);
 
         #if DEBUG
         printf("\nPos: ");

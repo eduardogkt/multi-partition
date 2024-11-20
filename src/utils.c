@@ -4,10 +4,7 @@
 #include <stdlib.h>
 
 int compar(const void *a, const void *b) {
-    llong n1 = *(llong *) a;
-    llong n2 = *(llong *) b;
-    
-    return (n1 - n2);
+    return (*(llong *) a - *(llong *) b);
 }
 
 void print_array_llong(llong *array, llong n_memb) {
@@ -88,7 +85,7 @@ llong *copy_array(llong *original, llong n_memb) {
     return copy;
 }
 
-void initialize_global_arrays(llong *InputG, llong Input_size, llong *PG, llong P_size) {
+void initialize_global_arrays(llong *InputG, int Input_size, llong *PG, int P_size) {
     // fazendo replicas até encher InputG ou ser suficiente para o número testes
     for (llong i = 0; (i < MAX_SIZE / Input_size) && (i <= N_TESTS); i++) {
         for (llong j = 0; j < Input_size; j++) {
@@ -113,7 +110,9 @@ void initialize_global_arrays(llong *InputG, llong Input_size, llong *PG, llong 
     }
 }
 
-int checkEntry(int argc, char **argv, llong *Input_size, llong *P_size, int *num_threads) {
+int checkEntry(int argc, char **argv, 
+               int *Input_size, int *P_size, 
+               int *num_threads) {
 
     if (argc < 3) {
         fprintf(stderr, "uso: %s <Input_size> <P_size> <num_threads>\n", argv[0]);
