@@ -11,6 +11,10 @@ int compar(const void *a, const void *b) {
 }
 
 void print_array_llong(llong *array, llong n_memb) {
+    if (array == NULL) {
+        return;
+    }
+
     for (llong i = 0; i < n_memb; i++) {
         printf("%lld ", array[i]);
     }
@@ -18,6 +22,10 @@ void print_array_llong(llong *array, llong n_memb) {
 }
 
 void print_array_int(int *array, llong n_memb) {
+    if (array == NULL) {
+        return;
+    }
+    
     for (llong i = 0; i < n_memb; i++) {
         printf("%d ", array[i]);
     }
@@ -52,15 +60,17 @@ long long geraAleatorioLL() {
     return v;
 }
 
-llong *create_array(llong num_memb) {
+llong *create_array(llong num_memb, int fill) {
     llong *array = (llong *) malloc(sizeof(llong) * num_memb);
     if (array == NULL) {
         fprintf(stderr, "erro ao alocar memória para o vetor");
         exit(EXIT_FAILURE);
     }
 
-    for (llong i = 0; i < num_memb; i++) {
-        array[i] = -1;
+    if (fill) {
+        for (llong i = 0; i < num_memb; i++) {
+            array[i] = -1;
+        }
     }
 
     return array;
@@ -78,28 +88,26 @@ llong *copy_array(llong *original, llong n_memb) {
     return copy;
 }
 
-void initialize_global_arrays(llong *InputG, llong Input_size, llong* PG, llong P_size) {
-    // preenchendo Input com valores aleatórios
-    for (llong j = 0; j < Input_size; j++) {
-        InputG[j] = rand() % 100; // = geraAleatorioLL();
-    }
-    qsort(InputG, Input_size, sizeof(llong), compar);
-
-    // fazendo replicas até ecncher InputG ou ser suficiente para o número testes
-    for (llong i = 1; (i < MAX_SIZE / Input_size) && (i <= N_TESTS); i++) {
+void initialize_global_arrays(llong *InputG, llong Input_size, llong *PG, llong P_size) {
+    // fazendo replicas até encher InputG ou ser suficiente para o número testes
+    for (llong i = 0; (i < MAX_SIZE / Input_size) && (i <= N_TESTS); i++) {
         for (llong j = 0; j < Input_size; j++) {
+            if (i == 0) {
+                InputG[j] = rand() % 100; // = geraAleatorioLL();
+            }
             InputG[(i * Input_size) + j] = InputG[j];
         }
     }
-    // inserir maxlonglong no final
 
-    // faz a mesma coisa para o vetor de pesquisa
-    // não precisa dividir em 2 loops porque não precisa ser ordenado
-    for (llong i = 0; (i < MAX_SIZE / P_size) && (i <= N_TESTS); i++) {
+    // a primeira iteração é isolada porque os valores precisam ser ordenados
+    for (llong i = 0; i < P_size; i++) {
+        PG[i] = rand() % 100; // = geraAleatorioLL();
+    }
+    qsort(PG, P_size, sizeof(llong), compar);
+
+    // fazendo replicas até encher PG ou ser suficiente para o número de testes 
+    for (llong i = 1; (i < MAX_SIZE / P_size) && (i <= N_TESTS); i++) {
         for (llong j = 0; j < P_size; j++) {
-            if (i == 0) {
-                PG[j] = rand() % 100; // = geraAleatorioLL();
-            }
             PG[(i * P_size) + j] = PG[j];
         }
     }

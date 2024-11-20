@@ -6,8 +6,11 @@
 // numero maximo de threads
 #define MAX_THREADS 64
 
-// quantidade de elemento long long que cabem em uma cache 2 GB de RAM
+#if DEBUG
+#define MAX_SIZE (89 * 1000 * 1000)
+#else
 #define MAX_SIZE (100 * 1000 * 1000)
+#endif
 
 // valores de entrada para testes
 #define SIZE_100K 100000
@@ -23,7 +26,7 @@
 #define POS_SIZE P_SIZE
 
 // quantidade de testes realizados
-#define N_TESTS 1
+#define N_TESTS 10
 
 // imprime o array de elementos tipo llong
 void print_array_llong(llong *array, llong n_memb);
@@ -33,13 +36,13 @@ void print_array_int(int *array, llong n_memb);
 
 // cria uma array de elementos tipo llong
 // o vetor pode ser preenchido com valores aleatórios e ordenado
-llong *create_array(llong num_memb);
+llong *create_array(llong num_memb, int fill);
 
 // faz uma cópia do vetor original
 llong *copy_array(llong *original, llong n_memb);
 
 // inicializa os vetores globais com sequencias de valores aleatorios
-void initialize_global_arrays(llong *InputG, llong Input_size, llong* QG, llong Q_size);
+void initialize_global_arrays(llong *InputG, llong Input_size, llong *PG, llong P_size);
 
 // checa os parametros de entrada para garantir que estão no formato correto
 int checkEntry(int argc, char **argv, llong *Input_size, llong *P_size, int *num_threads);

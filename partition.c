@@ -36,7 +36,7 @@ typedef struct thread_data {
 llong InputG[MAX_SIZE];  // vetor global de input
 llong OutputG[MAX_SIZE]; // vetor global de saída
 llong PG[MAX_SIZE];      // vetor global de posições
-llong PosG[MAX_SIZE];    // vetor global de indices
+int PosG[MAX_SIZE];      // vetor global de indices
 
 pthread_t threads[MAX_THREADS];
 thread_data_t thread_data[MAX_THREADS];
@@ -158,62 +158,62 @@ chronometer_t chrono;
 //     return Pos;
 // }
 
-void multi_partition(long long *Input, int n, 
-                     long long *P, int np, 
-                     long long *Output, int *Pos) {
+void multi_partition(llong *Input, int Input_size, 
+                     llong *P, llong P_size, 
+                     llong *Output, int *Pos, 
+                     int num_threads) {
 
     static int initialized = 0;
-    llong *Pos = create_array(np);
-    // llong Pos_partial[num_threads];
+    // Pos = create_array(P_size, 1);
+    // Output = create_array(Input_size, 0);
+
+    memcpy(Output, Input, Input_size);
 
     // encontra cada um dos valores de P
-    for (llong qpos = 0; qpos < P_size; qpos++) {
-        // inicializa a thread dando uma parte do vetor P para cada thread resolver
-        if (!initialized) {
-            initialize_data(Input, Input_size, num_threads, P, qpos);
-            initialized = 1;
-        }
-        else {
-            for (int i = 0; i < num_threads; i++) {
-                // associando a valor de pesquisa atual
-                thread_data[i].q = P[qpos];
-            }
-        }
+    // for (llong qpos = 0; qpos < P_size; qpos++) {
+    //     // inicializa a thread dando uma parte do vetor P para cada thread resolver
+    //     if (!initialized) {
+    //         initialize_data(Input, Input_size, num_threads, P, qpos);
+    //         initialized = 1;
+    //     }
+    //     else {
+    //         for (int i = 0; i < num_threads; i++) {
+    //             // associando a valor de pesquisa atual
+    //             thread_data[i].q = P[qpos];
+    //         }
+    //     }
 
-        chrono_start(&chrono);
+    //     chrono_start(&chrono);
 
-        // entra na barreira para que as threads iniciem a execução
-        pthread_barrier_wait(&barrier_start);
+    //     // entra na barreira para que as threads iniciem a execução
+    //     pthread_barrier_wait(&barrier_start);
 
-        // espera threads terminarem iteração para retornar o resultado de Pos
-        pthread_barrier_wait(&barrier_end);
+    //     // espera threads terminarem iteração para retornar o resultado de Pos
+    //     pthread_barrier_wait(&barrier_end);
 
-        chrono_stop(&chrono);
+    //     chrono_stop(&chrono);
 
-        // cria um novo vetor com os valores das posições dados por cada thread
-        for (int i = 0; i < num_threads; i++) {
-            Pos_partial[i] = Input[thread_data[i].pos];
-        }
+    //     // cria um novo vetor com os valores das posições dados por cada thread
+    //     for (int i = 0; i < num_threads; i++) {
+    //         Pos_partial[i] = Input[thread_data[i].pos];
+    //     }
 
-        #if DEBUG
-        printf("Pos_partial: ");
-        print_array(Pos_partial, num_threads);
-        #endif
+    //     #if DEBUG
+    //     printf("Pos_partial: ");
+    //     print_array(Pos_partial, num_threads);
+    //     #endif
 
-        // posição de q no vetor Inuput
-        Pos[qpos] = thread_data[my_bsearch(Pos_partial, num_threads, P[qpos])].pos;
-    }
-
-    return Pos;
+    //     // posição de q no vetor Inuput
+    //     Pos[qpos] = thread_data[my_bsearch(Pos_partial, num_threads, P[qpos])].pos;
+    // }
 }
 
 
 int main(int argc, char **argv) {
     srand(time(NULL));
 
-    llong Input_size;
-    llong P_size, *Output = NULL;
-    int num_threads, *Pos;
+    llong Input_size, P_size;
+    int num_threads;
 
     if (!checkEntry(argc, argv, &Input_size, &P_size, &num_threads)) {
         exit(EXIT_FAILURE);
@@ -224,10 +224,14 @@ int main(int argc, char **argv) {
     chrono_reset(&chrono);
     printf("\n-> chamando multi_partition %d vezes\n", N_TESTS);
 
+    llong Input_start, P_start;
+    llong *Input, *Output, *P;
+    int *Pos;
+    
     for (int i = 0; i < N_TESTS; i++) {
 
-        llong Input_start = i * Input_size;
-        llong P_start = i * P_size;
+        Input_start = i * Input_size;
+        P_start = i * P_size;
         
         if ((Input_size + Input_start) > MAX_SIZE) {
             Input_start = 0;
@@ -236,8 +240,10 @@ int main(int argc, char **argv) {
             P_start = 0;
         }
         
-        llong *Input = &InputG[Input_start];
-        llong *P = &PG[P_start];
+        Input = &InputG[Input_start];
+        Output = &OutputG[Input_start];
+        P = &PG[P_start];
+        Pos = &PosG[P_start];
 
         #if DEBUG
         printf("Input_start: %lld\n", Input_start);
@@ -251,17 +257,18 @@ int main(int argc, char **argv) {
         printf("\n");
         #endif
 
-        multi_partition(Input, Input_size, P, P_size, Output, Pos);
-        chrono_stop(&chrono);
+        multi_partition(Input, Input_size, P, P_size, Output, Pos, num_threads);
 
         #if DEBUG
-        printf("\nfinal Pos: ");
+        printf("\nPos: ");
         print_array_int(Pos, P_size);
+
+        printf("\nOutput: ");
+        print_array_llong(Output, Input_size);
         printf("\n\n");
         #endif
 
-        // free(Pos);
-        verifica_particoes(Input, Input_size, P, P_size, Output, Pos);
+        // verifica_particoes(Input, Input_size, P, P_size, Output, Pos);
     }
 
     llong total_partitioned = (double) P_size * N_TESTS;
