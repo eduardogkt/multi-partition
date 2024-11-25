@@ -277,7 +277,7 @@ int main(int argc, char **argv) {
         printf("\n\n");
         #endif
 
-        // verifica_particoes(Input, Input_size, P, P_size, Output, Pos);
+        verifica_particoes(Input, Input_size, P, P_size, Output, Pos);
     }
 
     llong total_partitioned = (double) P_size * N_TESTS;
