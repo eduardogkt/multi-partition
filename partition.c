@@ -1,4 +1,4 @@
-#define DEBUG 1
+// #define DEBUG 1
 /*
 Eduardo Gabriel Kenzo Tanaka GRR20211791
 
@@ -54,20 +54,26 @@ pthread_barrier_t barrier_start, barrier_end;
 
 chronometer_t chrono;
 
-// retorna o indice de inicio da partição do vetor
-int partition(llong *Input, int Input_size, llong P) {
-    int start = 0;
-    printf("\n\ncomenço %d", start);
-    printf("\nthread procurando %lld -> ", P);
-    
-    for (int i = start; i < Input_size; i++) {
-        if (Input[i] >= P) {
-            printf("%d", i);
-            return i;
+// encontra o tamanho de cada partição e armazena em Part_sizes
+void find_partition_sizes(thread_data_t *data) {
+    // memset(data->Part_sizes, 0, sizeof(int) * data->P_size);
+    for (int i = 0; i < data->Input_size; i++) {
+        for (int j = 0; j < data->P_size; j++) {
+            if (data->Output[i] < data->P[j]) {
+                data->Part_sizes[j]++;
+                break;
+            }
         }
     }
-    printf("não encontrou retornando %d", Input_size - 1);
-    return Input_size - 1;
+}
+
+// encontra o índice de início de cada partição e armazena em Inits
+void find_partition_starts(thread_data_t *data) {
+    data->Inits[0] = 0;
+    for (int i = 1; i < data->P_size; i++) {
+        data->Inits[i] = data->Inits[i-1] + data->Part_sizes[i-1];
+    }
+    // data->Inits[data->P_size - 1] = -1;
 }
 
 void *partitionate(void *arg) {
@@ -75,47 +81,14 @@ void *partitionate(void *arg) {
     while (1) {
         thread_data_t *data = (thread_data_t *) arg;
 
-        // esperando ser liberada para pela thread principal
-        // #if DEBUG
-        // printf("\nthread %d esperando...\n", data->id);
-        // #endif
-
         pthread_barrier_wait(&barrier_start);
 
         // cria uma copia ordenada do vetor de entrada
         memcpy(data->Output, data->Input, sizeof(llong) * data->Input_size);
         qsort(data->Output, data->Input_size, sizeof(llong), compar);
-        printf("\nOutput %d: ", data->id);
-        print_array_llong(data->Output, data->Input_size);
 
-        // #if DEBUG
-        // printf("\nthread %d liberada\n", data->id);
-        // #endif
-        
-        // acha as partições
-        for (int i = 0; i < data->Input_size; i++) {
-            for (int j = 0; j < data->P_size; j++) {
-                if (data->Output[i] < data->P[j]) {
-                    data->Part_sizes[j]++;
-                    break;
-                }
-            }
-        }
-        printf("parts %d: ", data->id);
-        print_array_int(data->Part_sizes, data->P_size);
-        data->Inits[0] = 0;
-        for (int i = 1; i < data->P_size - 1; i++) {
-            data->Inits[i] = data->Inits[i-1] + data->Part_sizes[i-1];
-        }
-        data->Inits[data->P_size - 1] = -1;
-
-        printf("inits %d: ", data->id);
-        print_array_int(data->Inits, data->P_size);
-        
-        // #if DEBUG
-        // printf("\nthread %d: ", data->id);
-        // print_array_int(data->Pos, P_size);
-        // #endif
+        find_partition_sizes(data);
+        find_partition_starts(data);
 
         pthread_barrier_wait(&barrier_end);
     }
@@ -171,6 +144,41 @@ void initialize_data(llong *Input, int Input_size,
     }
 }
 
+void print_output_parts(int num_threads, thread_data_t *data) {
+    #if DEBUG
+    for (int i = 0; i < num_threads; i++) {
+        printf("Part_sizes %d: ", thread_data[i].id);
+        print_array_int(thread_data[i].Part_sizes, thread_data[i].P_size);
+
+        printf("Output %d: ", thread_data[i].id);
+        print_array_llong(thread_data[i].Output, thread_data[i].Input_size);
+        printf("\n");
+    }
+    #endif
+}
+
+void join_partitions(llong *Output, llong *P, int P_size, int *Pos, int num_threads) {
+    int out_idx = 0;
+    for (int i = 0; i < P_size; i++) {
+        if (i == 0) {
+            printf("\npartição %d [0, %lld]:\n", i, P[i]);
+        }
+        else {
+            printf("\npartição %d [%lld, %lld]:\n", i, P[i-1], P[i]);
+        }
+        Pos[i] = out_idx;
+        for (int j = 0; j < num_threads; j++) {
+            printf("\n%d: init:%d tam:%d\n", thread_data[j].id, thread_data[j].Inits[i], thread_data[j].Part_sizes[i]);
+            
+            for (int k = thread_data[j].Inits[i]; k < thread_data[j].Inits[i] + thread_data[j].Part_sizes[i]; k++) {
+                printf("%lld ", thread_data[j].Output[k]);
+                Output[out_idx] = thread_data[j].Output[k];
+                out_idx++;
+            }
+        }
+    }
+}
+
 void multi_partition(llong *Input, int Input_size, 
                      llong *P, int P_size, 
                      llong *Output, int *Pos, 
@@ -197,30 +205,11 @@ void multi_partition(llong *Input, int Input_size,
     // espera threads terminarem iteração para retornar o resultado de Pos
     pthread_barrier_wait(&barrier_end);
 
-    // passa por cada thread juntando os valores nos vetores finais
-    // provavelmente um loop duplo
-    for (int i = 0; i < num_threads; i++) {
-        printf("Part_sizes %d: ", thread_data[i].id);
-        print_array_int(thread_data[i].Part_sizes, thread_data[i].P_size);
+    print_output_parts(num_threads, thread_data);
 
-        printf("Output %d: ", thread_data[i].id);
-        print_array_llong(thread_data[i].Output, thread_data[i].Input_size);
-    }
-
-    int out_idx = 0;
-    for (int i = 0; i < P_size - 1; i++) {
-        printf("\npartição %d:\n", i);
-        for (int j = 0; j < num_threads; j++) {
-            printf("\n%d: init(%d) tam(%d)\n", thread_data[j].id, thread_data[j].Inits[i], thread_data[j].Part_sizes[i]);
-            
-            for (int k = thread_data[j].Inits[i]; k < thread_data[j].Inits[i] + thread_data[j].Part_sizes[i]; k++) {
-                printf("%lld ", thread_data[j].Output[k]);
-                Output[out_idx] = thread_data[j].Output[k];
-                out_idx++;
-            }
-        }
-    }
-
+    // junta os resultados das threads
+    join_partitions(Output, P, P_size, Pos, num_threads);
+    
     for (int i = 0; i < num_threads; i++) {
         free(thread_data[i].Pos);
         free(thread_data[i].Part_sizes);
