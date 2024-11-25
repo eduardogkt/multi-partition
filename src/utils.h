@@ -26,7 +26,7 @@
 #define POS_SIZE P_SIZE
 
 // quantidade de testes realizados
-#define N_TESTS 1
+#define N_TESTS 10
 
 int compar(const void *a, const void *b);
 
@@ -35,13 +35,6 @@ void print_array_llong(llong *array, llong n_memb);
 
 // imprime o array de elementos tipo int
 void print_array_int(int *array, llong n_memb);
-
-// cria uma array de elementos tipo llong
-// o vetor pode ser preenchido com valores aleatórios e ordenado
-llong *create_array(llong num_memb, int fill);
-
-// faz uma cópia do vetor original
-llong *copy_array(llong *original, llong n_memb);
 
 // inicializa os vetores globais com sequencias de valores aleatorios
 void initialize_global_arrays(llong *InputG, int Input_size, llong *PG, int P_size);

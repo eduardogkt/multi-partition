@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 int compar(const void *a, const void *b) {
     return (*(llong *) a - *(llong *) b);
@@ -29,25 +30,6 @@ void print_array_int(int *array, llong n_memb) {
     printf("\n");
 }
 
-// llong *create_array(llong num_memb, int fill, int sort) {
-//     llong *array = (llong *) malloc(sizeof(llong) * num_memb);
-//     if (array == NULL) {
-//         fprintf(stderr, "erro ao alocar memória para o vetor");
-//         exit(EXIT_FAILURE);
-//     }
-
-//     for (llong i = 0; i < num_memb; i++) {
-//         array[i] = fill ? rand() : -1;
-//         // array[i] = i;
-//     }
-
-//     if (sort) {
-//         qsort(array, num_memb, sizeof(llong), compar);
-//     }
-
-//     return array;
-// }
-
 long long geraAleatorioLL() {
     // returns a pseudo-random integer between 0 and RAND_MAX
     int a = rand();
@@ -57,45 +39,15 @@ long long geraAleatorioLL() {
     return v;
 }
 
-llong *create_array(llong num_memb, int fill) {
-    llong *array = (llong *) malloc(sizeof(llong) * num_memb);
-    if (array == NULL) {
-        fprintf(stderr, "erro ao alocar memória para o vetor");
-        exit(EXIT_FAILURE);
-    }
-
-    if (fill) {
-        for (llong i = 0; i < num_memb; i++) {
-            array[i] = -1;
-        }
-    }
-
-    return array;
-}
-
-llong *copy_array(llong *original, llong n_memb) {
-    llong *copy = (llong *) malloc(n_memb * sizeof(llong));
-    if (copy == NULL) {
-        fprintf(stderr, "erro ao alocar memória para a cópia do array.\n");
-        exit(EXIT_FAILURE);
-    }
-    for (llong i = 0; i < n_memb; i++) {
-        copy[i] = original[i];
-    }
-    return copy;
-}
-
-#include <limits.h>
-
-int in[100] = {8, 4, 7, 11, 3, 7, 7, 13, 44, 46, 44, 100, 100, 110 };
-llong p[100] = {12, 70, 90, LLONG_MAX};
+// int in[100] = {8, 4, 7, 11, 3, 7, 7, 13, 44, 46, 44, 100, 100, 110 };
+// llong p[100] = {12, 70, 90, LLONG_MAX};
 
 void initialize_global_arrays(llong *InputG, int Input_size, llong *PG, int P_size) {
     // fazendo replicas até encher InputG ou ser suficiente para o número testes
     for (llong i = 0; (i < MAX_SIZE / Input_size) && (i <= N_TESTS); i++) {
         for (llong j = 0; j < Input_size; j++) {
             if (i == 0) { 
-                InputG[j] = in[j]; // rand() % 100; // = geraAleatorioLL();
+                InputG[j] = rand() % 100; // = geraAleatorioLL();
             }
             InputG[(i * Input_size) + j] = InputG[j];
         }
@@ -103,9 +55,10 @@ void initialize_global_arrays(llong *InputG, int Input_size, llong *PG, int P_si
 
     // a primeira iteração é isolada porque os valores precisam ser ordenados
     for (llong i = 0; i < P_size; i++) {
-        PG[i] = p[i]; // rand() % 100; // = geraAleatorioLL();
+        PG[i] = rand() % 100; // = geraAleatorioLL();
     }
-    // qsort(PG, P_size, sizeof(llong), compar);
+    PG[P_size - 1] = LLONG_MAX;
+    qsort(PG, P_size, sizeof(llong), compar);
 
     // fazendo replicas até encher PG ou ser suficiente para o número de testes 
     for (llong i = 1; (i < MAX_SIZE / P_size) && (i <= N_TESTS); i++) {

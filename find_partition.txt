@@ -1,0 +1,16 @@
+// encontra o tamanho de cada partição e armazena em Part_sizes
+void find_partition_sizes(thread_data_t *data) {
+    memset(data->Part_sizes, 0, data->P_size * sizeof(int));
+    int out_idx = 0;
+    for (int i = 0; i < data->P_size; i++) {
+        for (int j = out_idx; j < data->Input_size; j++) {
+            if (data->Output[j] < data->P[i]) {
+                data->Part_sizes[i]++;
+                out_idx++;
+            }
+            else {
+                break; // fim da partição
+            }
+        }
+    }
+}

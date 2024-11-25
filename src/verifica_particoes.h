@@ -6,7 +6,7 @@
 #endif
 
 // verifica se as partições criados por multi_partition estão corretas
-void verifica_particoes(llong *Input, int Input_size, 
+int verifica_particoes(llong *Input, int Input_size, 
                         llong *P, int P_size, 
                         llong *Output, int *Pos);
 
