@@ -85,12 +85,17 @@ llong *copy_array(llong *original, llong n_memb) {
     return copy;
 }
 
+#include <limits.h>
+
+int in[100] = {8, 4, 7, 11, 3, 7, 7, 13, 44, 46, 44, 100, 100, 110 };
+llong p[100] = {12, 70, 90, LLONG_MAX};
+
 void initialize_global_arrays(llong *InputG, int Input_size, llong *PG, int P_size) {
     // fazendo replicas até encher InputG ou ser suficiente para o número testes
     for (llong i = 0; (i < MAX_SIZE / Input_size) && (i <= N_TESTS); i++) {
         for (llong j = 0; j < Input_size; j++) {
-            if (i == 0) {
-                InputG[j] = rand() % 100; // = geraAleatorioLL();
+            if (i == 0) { 
+                InputG[j] = in[j]; // rand() % 100; // = geraAleatorioLL();
             }
             InputG[(i * Input_size) + j] = InputG[j];
         }
@@ -98,9 +103,9 @@ void initialize_global_arrays(llong *InputG, int Input_size, llong *PG, int P_si
 
     // a primeira iteração é isolada porque os valores precisam ser ordenados
     for (llong i = 0; i < P_size; i++) {
-        PG[i] = rand() % 100; // = geraAleatorioLL();
+        PG[i] = p[i]; // rand() % 100; // = geraAleatorioLL();
     }
-    qsort(PG, P_size, sizeof(llong), compar);
+    // qsort(PG, P_size, sizeof(llong), compar);
 
     // fazendo replicas até encher PG ou ser suficiente para o número de testes 
     for (llong i = 1; (i < MAX_SIZE / P_size) && (i <= N_TESTS); i++) {

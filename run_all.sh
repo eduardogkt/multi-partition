@@ -5,9 +5,9 @@
 echo "Testando para diferentes tamanhos de P"
 
 for p_size in {1000,100000}; do
-    read -p "Testar com P $p_size? (y/n) " resposta
+    read -p "Testar com P $p_size? (s/n) " resposta
     
-    if [[ "$resposta" != "y" ]]; then
+    if [[ "$resposta" != "s" ]]; then
         echo "Pulando o valor $p_size."
         continue  # pula para a próxima iteração
     fi

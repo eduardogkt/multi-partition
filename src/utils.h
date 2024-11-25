@@ -7,9 +7,9 @@
 #define MAX_THREADS 64
 
 #if DEBUG
-#define MAX_SIZE (89 * 1000 * 1000)
+#define MAX_SIZE (76 * 1000 * 1000)
 #else
-#define MAX_SIZE (89 * 1000 * 1000)
+#define MAX_SIZE (76 * 1000 * 1000)
 #endif
 
 // valores de entrada para testes
@@ -26,7 +26,7 @@
 #define POS_SIZE P_SIZE
 
 // quantidade de testes realizados
-#define N_TESTS 10
+#define N_TESTS 1
 
 int compar(const void *a, const void *b);
 

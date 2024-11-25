@@ -1,3 +1,4 @@
+#define DEBUG 1
 /*
 Eduardo Gabriel Kenzo Tanaka GRR20211791
 
@@ -28,9 +29,16 @@ n = 16000000 por default
 #include "src/verifica_particoes.h"
 
 typedef struct thread_data {
-    int id;            // id da tarefa/thread
-    llong *Input;      // vetor de entrada
-    llong Input_size;  // tamanho do vetor de entrada
+    int id;           // id da tarefa/thread
+    llong *P;         // vetor de elementos de partição
+    llong *Input;     // segmento do vetor de entrada da thread
+    llong *Output;    // vetor de saida
+    int P_size;       // tamanho do vetor de elementos de partição
+    int Input_size;   // tamanho do segmento do vetor de entrada da thread
+    int Input_start;  // indice inicial da fatia do vetor de entrada da thread
+    int Input_end;    // indice final da fatia do vetor de entrada da thread
+    int *Pos;         // vetor de indices de partição local
+    int *Part_sizes;  // tamanho de cada partição local
 } thread_data_t;
 
 llong InputG[MAX_SIZE];  // vetor global de input
@@ -45,118 +53,116 @@ pthread_barrier_t barrier_start, barrier_end;
 
 chronometer_t chrono;
 
-// void *find_P(void *arg) {
+// retorna o indice de inicio da partição do vetor
+int partition(llong *Input, int Input_size, llong P) {
+    int start = 0;
+    printf("\n\ncomenço %d", start);
+    printf("\nthread procurando %lld -> ", P);
+    
+    for (int i = start; i < Input_size; i++) {
+        if (Input[i] >= P) {
+            printf("%d", i);
+            return i;
+        }
+    }
+    printf("não encontrou retornando %d", Input_size - 1);
+    return Input_size - 1;
+}
 
-//     while (1) {
-//         thread_data_t *data = (thread_data_t *) arg;
+void *partitionate(void *arg) {
 
-//         // esperando ser liberada para pela thread principal
-//         // #if DEBUG
-//         // printf("\nthread %d esperando...\n", data->id);
-//         // #endif
+    while (1) {
+        thread_data_t *data = (thread_data_t *) arg;
 
-//         pthread_barrier_wait(&barrier_start);
+        // esperando ser liberada para pela thread principal
+        // #if DEBUG
+        // printf("\nthread %d esperando...\n", data->id);
+        // #endif
 
-//         // #if DEBUG
-//         // printf("\nthread %d liberada\n", data->id);
-//         // #endif
+        pthread_barrier_wait(&barrier_start);
+
+        printf("\nP: ");
+        print_array_llong(data->P, data->P_size);
+
+        // cria uma copia ordenada do vetor de entrada
+        memcpy(data->Output, data->Input, sizeof(llong) * data->Input_size);
+        qsort(data->Output, data->Input_size, sizeof(llong), compar);
+        printf("\nOutput %d: ", data->id);
+        print_array_llong(data->Output, data->Input_size);
+
+        // #if DEBUG
+        // printf("\nthread %d liberada\n", data->id);
+        // #endif
         
-//         data->pos = my_bsearch(data->Input, data->Input_size, data->q);
+        // acha as partições
+        for (int i = 0; i < data->Input_size; i++) {
+            for (int j = 0; j < data->P_size; j++) {
+                if (data->Output[i] < data->P[j]) {
+                    data->Part_sizes[j]++;
+                    break;
+                }
+            }
+        }
+        printf("Part_sizes %d: ", data->id);
+        print_array_int(data->Part_sizes, data->P_size);
         
-//         #if DEBUG
-//         printf("\nthread %d: q %lld -> local %lld, global %lld\n", 
-//                data->id, data->q, data->pos, data->pos + data->Input_start);
-//         #endif
+        // #if DEBUG
+        // printf("\nthread %d: ", data->id);
+        // print_array_int(data->Pos, P_size);
+        // #endif
 
-//         // adiciona ao inicio do segmento do vetor Input 
-//         // para encontar a posição global de q
-//         data->pos += data->Input_start;
+        pthread_barrier_wait(&barrier_end);
+    }
+    pthread_exit(NULL);
+}
 
-//         pthread_barrier_wait(&barrier_end);
-//     }
-//     pthread_exit(NULL);
-// }
+void set_vectors(thread_data_t *thread_data, llong *Input, llong *P, int P_size, llong *Output) {
+    thread_data->Input = &Input[thread_data->Input_start];
+    thread_data->Output = &Output[thread_data->Input_start];
+    thread_data->P = P;
+    thread_data->Pos = malloc(sizeof(int) * P_size);
+    thread_data->Part_sizes = malloc(sizeof(int) * P_size);
+}
 
-// void initialize_data(llong *Input, llong Input_size, 
-//                      int num_threads, llong *P, llong qpos) {
+void initialize_data(llong *Input, int Input_size, 
+                     llong *P, int P_size, 
+                     int *Pos, int num_threads,
+                     llong *Output) {
+
+    int segment_size = Input_size / num_threads;
+
+    #if DEBUG
+    printf("\n-> inicializando threads\n\n");
+    #endif
     
-//     int segment_size = Input_size / num_threads;
-    
-//     #if DEBUG
-//     printf("-> inicializando threads\n\n");
-//     #endif
-    
-//     pthread_barrier_init(&barrier_start, NULL, num_threads + 1);
-//     pthread_barrier_init(&barrier_end, NULL, num_threads + 1);
+    pthread_barrier_init(&barrier_start, NULL, num_threads + 1);
+    pthread_barrier_init(&barrier_end, NULL, num_threads + 1);
 
-//     for (int i = 0; i < num_threads; i++) {
+    for (int i = 0; i < num_threads; i++) {
         
-//         thread_data[i].id = i;
-//         thread_data[i].Input_size = (i == num_threads - 1) ? 
-//                                     Input_size - i * segment_size : 
-//                                     segment_size;;
-//         thread_data[i].Input_start = i * segment_size;
-//         thread_data[i].Input = &Input[thread_data[i].Input_start];
-//         thread_data[i].q = P[qpos];
-//         thread_data[i].pos = -1;
+        thread_data[i].id = i;
+        thread_data[i].Input_size = (i == num_threads - 1) ? 
+                                    Input_size - i * segment_size : 
+                                    segment_size;
+        thread_data[i].Input_start = i * segment_size;
+        thread_data[i].Input_end = (i == num_threads - 1) ? 
+                                   Input_size : 
+                                   (i + 1) * segment_size;
+        thread_data[i].P_size = P_size;
+        set_vectors(&thread_data[i], Input, P, P_size, Output);
 
-//         #if DEBUG
-//         printf("criando thread %d\n", i);
-//         llong start = thread_data[i].Input_start;
-//         llong end = thread_data[i].Input_start + thread_data[i].Input_size;
-//         printf("Input[%lld..%lld]: ", start, end);
-//         print_array(&Input[thread_data[i].Input_start], end - start);
-//         printf("\n");
-//         #endif
+        #if DEBUG
+        printf("criando thread %d\n", i);
+        llong start = thread_data[i].Input_start;
+        llong end = thread_data[i].Input_start + thread_data[i].Input_size;
+        printf("Input[%lld..%lld]: ", start, end);
+        print_array_llong(thread_data[i].Input, thread_data[i].Input_size);
+        printf("\n");
+        #endif
 
-//         pthread_create(&threads[i], NULL, find_P, (void *) &thread_data[i]);
-//     }
-// }
-
-// llong *find_positions(llong *Input, llong Input_size, 
-//                       llong* P, llong P_size, 
-//                       int num_threads) {
-    
-//     static int initialized = 0;
-//     llong *Pos = create_array(POS_SIZE);
-//     llong Pos_partial[num_threads];
-
-//     // encontra cada um dos valores de P
-//     for (llong qpos = 0; qpos < P_size; qpos++) {
-//         // inicializa a thread dando uma parte do vetor P para cada thread resolver
-//         if (!initialized) {
-//             initialize_data(Input, Input_size, num_threads, P, qpos);
-//             initialized = 1;
-//         }
-//         else {
-//             for (int i = 0; i < num_threads; i++) {
-//                 // associando a valor de pesquisa atual
-//                 thread_data[i].q = P[qpos];
-//             }
-//         }
-
-//         // entra na barreira para que as threads iniciem a execução
-//         pthread_barrier_wait(&barrier_start);
-
-//         // espera threads terminarem iteração para retornar o resultado de Pos
-//         pthread_barrier_wait(&barrier_end);  
-
-//         // cria um novo vetor com os valores das posições dados por cada thread
-//         for (int i = 0; i < num_threads; i++) {
-//             Pos_partial[i] = Input[thread_data[i].pos];
-//         }
-
-//         #if DEBUG
-//         printf("Pos_partial: ");
-//         print_array(Pos_partial, num_threads);
-//         #endif
-
-//         // posição de q no vetor Inuput
-//         Pos[qpos] = thread_data[my_bsearch(Pos_partial, num_threads, P[qpos])].pos;
-//     }
-
-//     return Pos;
-// }
+        pthread_create(&threads[i], NULL, partitionate, (void *) &thread_data[i]);
+    }
+}
 
 void multi_partition(llong *Input, int Input_size, 
                      llong *P, int P_size, 
@@ -165,49 +171,33 @@ void multi_partition(llong *Input, int Input_size,
 
     static int initialized = 0;
 
-    // cria um cópia ordenada do vetor de entrada
-    memcpy(Output, Input, Input_size * sizeof(llong));
-    qsort(Output, Input_size, sizeof(llong), compar);
+    // inicializa a thread dando uma parte do vetor P para cada thread resolver
+    if (!initialized) {
+        initialize_data(Input, Input_size, P, P_size, Pos, num_threads, Output);
+        initialized = 1;
+    }
+    else {
+        // atribui os novos vetores globais a cada iteração para evitar
+        // efeito de cache
+        for (int i = 0; i < num_threads; i++) {
+            set_vectors(&thread_data[i], Input, P, P_size, Output);
+        }
+    }
 
-    // encontra cada um dos valores de P
-    // for (llong qpos = 0; qpos < P_size; qpos++) {
-    //     // inicializa a thread dando uma parte do vetor P para cada thread resolver
-    //     if (!initialized) {
-    //         initialize_data(Input, Input_size, num_threads, P, qpos);
-    //         initialized = 1;
-    //     }
-    //     else {
-    //         for (int i = 0; i < num_threads; i++) {
-    //             // associando a valor de pesquisa atual
-    //             thread_data[i].q = P[qpos];
-    //         }
-    //     }
+    // entra na barreira para que as threads iniciem a execução
+    pthread_barrier_wait(&barrier_start);
 
-    //     chrono_start(&chrono);
+    // espera threads terminarem iteração para retornar o resultado de Pos
+    pthread_barrier_wait(&barrier_end);
 
-    //     // entra na barreira para que as threads iniciem a execução
-    //     pthread_barrier_wait(&barrier_start);
+    // passa por cada thread juntando os valores nos vetores finais
+    // provavelmente um loop duplo
 
-    //     // espera threads terminarem iteração para retornar o resultado de Pos
-    //     pthread_barrier_wait(&barrier_end);
-
-    //     chrono_stop(&chrono);
-
-    //     // cria um novo vetor com os valores das posições dados por cada thread
-    //     for (int i = 0; i < num_threads; i++) {
-    //         Pos_partial[i] = Input[thread_data[i].pos];
-    //     }
-
-    //     #if DEBUG
-    //     printf("Pos_partial: ");
-    //     print_array(Pos_partial, num_threads);
-    //     #endif
-
-    //     // posição de q no vetor Inuput
-    //     Pos[qpos] = thread_data[my_bsearch(Pos_partial, num_threads, P[qpos])].pos;
-    // }
+    for (int i = 0; i < num_threads; i++) {
+        free(thread_data[i].Pos);
+        free(thread_data[i].Part_sizes);
+    }
 }
-
 
 int main(int argc, char **argv) {
     srand(time(NULL));
@@ -223,7 +213,7 @@ int main(int argc, char **argv) {
     chrono_reset(&chrono);
     printf("\n-> chamando multi_partition %d vezes\n", N_TESTS);
 
-    llong Input_start, P_start;
+    int Input_start, P_start;
     llong *Input, *Output, *P;
     int *Pos;
     
@@ -245,8 +235,8 @@ int main(int argc, char **argv) {
         Pos = &PosG[P_start];
 
         #if DEBUG
-        printf("Input_start: %lld\n", Input_start);
-        printf("P_start: %lld\n", P_start);
+        printf("Input_start: %d\n", Input_start);
+        printf("P_start: %d\n", P_start);
 
         printf("num threads: %d\n", num_threads);
         printf("Input (%d): ", Input_size);
