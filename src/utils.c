@@ -39,15 +39,15 @@ long long geraAleatorioLL() {
     return v;
 }
 
-// int in[100] = {8, 4, 7, 11, 3, 7, 7, 13, 44, 46, 44, 100, 100, 110 };
-// llong p[100] = {12, 70, 90, LLONG_MAX};
+// int in[100] = {95, 63, 82, 73, 14, 46, 52, 36, 31, 43, 73, 45, 73, 62}; // {8, 4, 7, 11, 3, 7, 7, 13, 44, 46, 44, 100, 100, 110 };
+// llong p[100] = {19, 22, 56, LLONG_MAX}; // {12, 70, 90, LLONG_MAX}; 
 
 void initialize_global_arrays(llong *InputG, int Input_size, llong *PG, int P_size) {
     // fazendo replicas até encher InputG ou ser suficiente para o número testes
     for (llong i = 0; (i < MAX_SIZE / Input_size) && (i <= N_TESTS); i++) {
         for (llong j = 0; j < Input_size; j++) {
             if (i == 0) { 
-                InputG[j] = rand() % 100; // = geraAleatorioLL();
+                InputG[j] = rand() % 100; // in[j];  // = geraAleatorioLL();
             }
             InputG[(i * Input_size) + j] = InputG[j];
         }
@@ -55,10 +55,10 @@ void initialize_global_arrays(llong *InputG, int Input_size, llong *PG, int P_si
 
     // a primeira iteração é isolada porque os valores precisam ser ordenados
     for (llong i = 0; i < P_size; i++) {
-        PG[i] = rand() % 100; // = geraAleatorioLL();
+        PG[i] = rand() % 100; // p[i];  // = geraAleatorioLL();
     }
     PG[P_size - 1] = LLONG_MAX;
-    qsort(PG, P_size, sizeof(llong), compar);
+    qsort(PG, P_size - 1, sizeof(llong), compar);
 
     // fazendo replicas até encher PG ou ser suficiente para o número de testes 
     for (llong i = 1; (i < MAX_SIZE / P_size) && (i <= N_TESTS); i++) {

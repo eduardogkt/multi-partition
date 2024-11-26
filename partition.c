@@ -85,6 +85,15 @@ void *partitionate(void *arg) {
         find_partition_sizes(data);
         find_partition_starts(data);
 
+        // printf("Output %d: ", data->id);
+        // print_array_llong(data->Output, data->Input_size);
+
+        // printf("Parts %d: ", data->id);
+        // print_array_int(data->Part_sizes, data->P_size);
+
+        // printf("Inits %d: ", data->id);
+        // print_array_int(data->Inits, data->P_size);
+
         pthread_barrier_wait(&barrier_end);
     }
     pthread_exit(NULL);
@@ -92,7 +101,7 @@ void *partitionate(void *arg) {
 
 void set_vectors(thread_data_t *thread_data, llong *Input, llong *P, int P_size, llong *Output) {
     thread_data->Input = &Input[thread_data->Input_start];
-    thread_data->Output = &Output[thread_data->Input_start];
+    thread_data->Output = malloc(sizeof(llong) * thread_data->Input_size);
     thread_data->P = P;
     thread_data->Pos = malloc(sizeof(int) * P_size);
     thread_data->Part_sizes = malloc(sizeof(int) * P_size);
@@ -154,6 +163,8 @@ void print_output_parts(int num_threads, thread_data_t *data) {
 
 void join_partitions(llong *Output, llong *P, int P_size, int *Pos, int num_threads) {
     // printf("JUNTANDO...\n");
+    // printf("Output: ");
+    // print_array_llong(Output, 14);
     int out_idx = 0;
     for (int i = 0; i < P_size; i++) {
         // if (i == 0) {

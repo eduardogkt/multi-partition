@@ -26,7 +26,7 @@
 #define POS_SIZE P_SIZE
 
 // quantidade de testes realizados
-#define N_TESTS 10
+#define N_TESTS 2
 
 int compar(const void *a, const void *b);
 
