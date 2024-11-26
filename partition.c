@@ -32,7 +32,6 @@ typedef struct thread_data {
     int P_size;       // tamanho do vetor de elementos de partição
     int Input_size;   // tamanho do segmento do vetor de entrada da thread
     int Input_start;  // indice inicial da fatia do vetor de entrada da thread
-    int Input_end;    // indice final da fatia do vetor de entrada da thread
     int *Pos;         // vetor de indices de partição local
     int *Part_sizes;  // tamanho de cada partição local
     int *Inits;       // indice de inicio de partições
@@ -101,11 +100,7 @@ void *partitionate(void *arg) {
 
 void set_vectors(thread_data_t *thread_data, llong *Input, llong *P, int P_size, llong *Output) {
     thread_data->Input = &Input[thread_data->Input_start];
-    thread_data->Output = malloc(sizeof(llong) * thread_data->Input_size);
     thread_data->P = P;
-    thread_data->Pos = malloc(sizeof(int) * P_size);
-    thread_data->Part_sizes = malloc(sizeof(int) * P_size);
-    thread_data->Inits = malloc(sizeof(int) * P_size);
 }
 
 void initialize_data(llong *Input, int Input_size, 
@@ -129,10 +124,13 @@ void initialize_data(llong *Input, int Input_size,
                                     Input_size - i * segment_size : 
                                     segment_size;
         thread_data[i].Input_start = i * segment_size;
-        thread_data[i].Input_end = (i == num_threads - 1) ? 
-                                   Input_size : 
-                                   (i + 1) * segment_size;
         thread_data[i].P_size = P_size;
+
+        thread_data[i].Output = malloc(sizeof(llong) * Input_size);
+        thread_data[i].Pos = malloc(sizeof(int) * P_size);
+        thread_data[i].Part_sizes = malloc(sizeof(int) * P_size);
+        thread_data[i].Inits = malloc(sizeof(int) * P_size);
+
         set_vectors(&thread_data[i], Input, P, P_size, Output);
 
         #if DEBUG
@@ -216,12 +214,6 @@ void multi_partition(llong *Input, int Input_size,
 
     // junta os resultados das threads
     join_partitions(Output, P, P_size, Pos, num_threads);
-    
-    for (int i = 0; i < num_threads; i++) {
-        free(thread_data[i].Pos);
-        free(thread_data[i].Part_sizes);
-        free(thread_data[i].Inits);
-    }
 }
 
 int main(int argc, char **argv) {
