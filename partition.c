@@ -19,6 +19,7 @@ n = 16000000 por default
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <limits.h>
 
 #include "src/chrono.h"
 #include "src/utils.h"
@@ -34,7 +35,6 @@ typedef struct thread_data {
     int Input_start;  // indice inicial da fatia do vetor de entrada da thread
     int *Pos;         // vetor de indices de partição local
     int *Part_sizes;  // tamanho de cada partição local
-    int *Inits;       // indice de inicio de partições
 } thread_data_t;
 
 llong InputG[MAX_SIZE];  // vetor global de input
@@ -51,22 +51,20 @@ chronometer_t chrono;
 
 // encontra o tamanho de cada partição e armazena em Part_sizes
 void find_partition_sizes(thread_data_t *data) {
-    memset(data->Part_sizes, 0, sizeof(int) * data->P_size);
-    for (int i = 0; i < data->Input_size; i++) {
-        for (int j = 0; j < data->P_size; j++) {
-            if (data->Output[i] < data->P[j]) {
-                data->Part_sizes[j]++;
-                break;
+    memset(data->Part_sizes, 0, data->P_size * sizeof(int));
+    int out_idx = 0;
+    data->Pos[0] = 0;
+    for (int i = 0; i < data->P_size; i++) {
+        for (int j = out_idx; j < data->Input_size; j++) {
+            if (data->Output[j] < data->P[i]) {
+                data->Part_sizes[i]++;
+                out_idx++;
+            }
+            else {
+                data->Pos[i+1] = out_idx;
+                break; // fim da partição
             }
         }
-    }
-}
-
-// encontra o índice de início de cada partição e armazena em Inits
-void find_partition_starts(thread_data_t *data) {
-    data->Inits[0] = 0;
-    for (int i = 1; i < data->P_size; i++) {
-        data->Inits[i] = data->Inits[i-1] + data->Part_sizes[i-1];
     }
 }
 
@@ -82,16 +80,6 @@ void *partitionate(void *arg) {
         qsort(data->Output, data->Input_size, sizeof(llong), compar);
 
         find_partition_sizes(data);
-        find_partition_starts(data);
-
-        // printf("Output %d: ", data->id);
-        // print_array_llong(data->Output, data->Input_size);
-
-        // printf("Parts %d: ", data->id);
-        // print_array_int(data->Part_sizes, data->P_size);
-
-        // printf("Inits %d: ", data->id);
-        // print_array_int(data->Inits, data->P_size);
 
         pthread_barrier_wait(&barrier_end);
     }
@@ -129,7 +117,6 @@ void initialize_data(llong *Input, int Input_size,
         thread_data[i].Output = malloc(sizeof(llong) * Input_size);
         thread_data[i].Pos = malloc(sizeof(int) * P_size);
         thread_data[i].Part_sizes = malloc(sizeof(int) * P_size);
-        thread_data[i].Inits = malloc(sizeof(int) * P_size);
 
         set_vectors(&thread_data[i], Input, P, P_size, Output);
 
@@ -160,26 +147,22 @@ void print_output_parts(int num_threads, thread_data_t *data) {
 }
 
 void join_partitions(llong *Output, llong *P, int P_size, int *Pos, int num_threads) {
-    // printf("JUNTANDO...\n");
-    // printf("Output: ");
-    // print_array_llong(Output, 14);
     int out_idx = 0;
+
+    // passa por cada thread juntando a partição p
     for (int i = 0; i < P_size; i++) {
-        // if (i == 0) {
-        //     printf("\npartição %d [0, %lld]:\n", i, P[i]);
-        // }
-        // else {
-        //     printf("\npartição %d [%lld, %lld]:\n", i, P[i-1], P[i]);
-        // }
+        // printf("\npartição %d [%lld, %lld]:\n", i, i == 0 ? 0 : P[i-1], P[i]);
+
         Pos[i] = out_idx;
         for (int j = 0; j < num_threads; j++) {
-            // printf("\n%d: init:%d tam:%d\n", thread_data[j].id, thread_data[j].Inits[i], thread_data[j].Part_sizes[i]);
-            
-            for (int k = thread_data[j].Inits[i]; k < thread_data[j].Inits[i] + thread_data[j].Part_sizes[i]; k++) {
-                // printf("%lld ", thread_data[j].Output[k]);
-                Output[out_idx] = thread_data[j].Output[k];
-                out_idx++;
-            }
+            int start_idx = thread_data[j].Pos[i];
+            int end_idx = start_idx + thread_data[j].Part_sizes[i];
+            // printf("de %d até %d\n", start_idx, end_idx);
+
+            memcpy(&Output[out_idx], &thread_data[j].Output[start_idx], 
+                   (end_idx - start_idx) * sizeof(llong));
+
+            out_idx += (end_idx - start_idx);
         }
     }
 }
@@ -197,8 +180,7 @@ void multi_partition(llong *Input, int Input_size,
         initialized = 1;
     }
     else {
-        // atribui os novos vetores globais a cada iteração para evitar
-        // efeito de cache
+        // atribui os novos vetores globais a cada iteração
         for (int i = 0; i < num_threads; i++) {
             set_vectors(&thread_data[i], Input, P, P_size, Output);
         }
@@ -209,8 +191,6 @@ void multi_partition(llong *Input, int Input_size,
 
     // espera threads terminarem iteração para retornar o resultado de Pos
     pthread_barrier_wait(&barrier_end);
-
-    // print_output_parts(num_threads, thread_data);
 
     // junta os resultados das threads
     join_partitions(Output, P, P_size, Pos, num_threads);
@@ -278,7 +258,7 @@ int main(int argc, char **argv) {
         verifica_particoes(Input, Input_size, P, P_size, Output, Pos);
     }
 
-    llong total_partitioned = (double) P_size * N_TESTS;
+    llong total_partitioned = (double) Input_size * N_TESTS;
     double total_time_ns = (double) chrono_gettotal(&chrono);
     double total_time_s = total_time_ns / (1000.0 * 1000.0 * 1000.0);
     
