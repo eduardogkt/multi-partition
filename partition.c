@@ -35,6 +35,7 @@ typedef struct thread_data {
     int Input_start;  // indice inicial da fatia do vetor de entrada da thread
     int *Pos;         // vetor de indices de partição local
     int *Part_sizes;  // tamanho de cada partição local
+    int *partitions;  // partitions[i] indica em que partição Input[i] está
 } thread_data_t;
 
 llong InputG[MAX_SIZE];  // vetor global de input
@@ -70,28 +71,39 @@ void find_partition_sizes(thread_data_t *data) {
 }
 
 void *partitionate(void *arg) {
-
     while (1) {
         thread_data_t *data = (thread_data_t *) arg;
 
         pthread_barrier_wait(&barrier_start);
 
-        // cria uma copia ordenada do vetor de entrada
-        memcpy(data->Output, data->Input, sizeof(llong) * data->Input_size);
-        
-        printf("Output ant %d: ", data->id);
-        print_array_llong(data->Output, data->Input_size);
+        memset(data->Part_sizes, 0, data->P_size * sizeof(int));
 
-        qsort(data->Output, data->Input_size, sizeof(llong), compar); /// porque não ta ordenando corretamete???
+        // particionar o segmento de Input diretamente em Output
+        for (int i = 0; i < data->Input_size; i++) {
+            // verifica em qual partição o valor atual pertence
+            for (int j = 0; j < data->P_size; j++) {
+                if (data->Input[i] < data->P[j]) {
+                    data->Part_sizes[j]++;
+                    data->partitions[i] = j;
+                    break;
+                }
+            }
+        }
 
-        find_partition_sizes(data);
+        // atualizar as posições das partições
+        data->Pos[0] = 0;
+        for (int i = 1; i < data->P_size; i++) {
+            data->Pos[i] = data->Pos[i-1] + data->Part_sizes[i-1];
+        }
 
-        printf("Output %d: ", data->id);
-        print_array_llong(data->Output, data->Input_size);
-        printf("Parts %d: ", data->id);
+        printf("Input %d: ", data->id);
+        print_array_llong(data->Input, data->Input_size);
+        printf("Parts  %d: ", data->id);
         print_array_int(data->Part_sizes, data->P_size);
-        printf("Pos %d: ", data->id);
+        printf("Pos    %d: ", data->id);
         print_array_int(data->Pos, data->P_size);
+        printf("partitions %d: ", data->id);
+        print_array_int(data->partitions, data->Input_size);
 
         pthread_barrier_wait(&barrier_end);
     }
@@ -129,6 +141,7 @@ void initialize_data(llong *Input, int Input_size,
         thread_data[i].Output = malloc(sizeof(llong) * Input_size);
         thread_data[i].Pos = malloc(sizeof(int) * P_size);
         thread_data[i].Part_sizes = malloc(sizeof(int) * P_size);
+        thread_data[i].partitions = malloc(sizeof(int) * Input_size);
 
         set_vectors(&thread_data[i], Input, P, P_size, Output);
 
@@ -159,36 +172,58 @@ void print_output_parts(int num_threads, thread_data_t *data) {
 }
 
 void join_partitions(llong *Output, llong *P, int P_size, int *Pos, int num_threads) {
+    // printf("JUNTANDO...\n");
+    // int out_idx = 0;
+
+    // // passa por cada thread juntando a partição p
+    // for (int i = 0; i < P_size; i++) {
+    //     printf("\npartição %d [%lld, %lld]:\n", i, i == 0 ? 0 : P[i-1], P[i]);
+
+    //     Pos[i] = out_idx;
+    //     for (int j = 0; j < num_threads; j++) {
+    //         int start_idx = thread_data[j].Pos[i];
+    //         int end_idx = start_idx + thread_data[j].Part_sizes[i];
+    //         // printf("de %d até %d\n", start_idx, end_idx);
+
+    //         printf("start:%d, end:%d\n", start_idx, end_idx);
+
+    //         printf("thr%d: ", j);
+
+    //         for (int k = start_idx; k < end_idx; k++) {
+    //             printf("%lld ", thread_data[j].Output[k]);
+    //             Output[out_idx] = thread_data[j].Output[k];
+    //             out_idx++;
+    //         }
+    //         printf("\n");
+
+    //         // memcpy(&Output[out_idx], &thread_data[j].Output[start_idx], 
+    //         //        (end_idx - start_idx) * sizeof(llong));
+
+    //         // out_idx += (end_idx - start_idx);
+    //     }
+    // }
+
+
     printf("JUNTANDO...\n");
-    int out_idx = 0;
 
-    // passa por cada thread juntando a partição p
-    for (int i = 0; i < P_size; i++) {
-        printf("\npartição %d [%lld, %lld]:\n", i, i == 0 ? 0 : P[i-1], P[i]);
+    int partitions_start[P_size]; // vetor de indices de incio de partição
+    int partitions_sizes[P_size]; // vetor tamanhos de cada partição
+    memset(partitions_start, 0, P_size * sizeof(int));
+    memset(partitions_sizes, 0, P_size * sizeof(int));
 
-        Pos[i] = out_idx;
-        for (int j = 0; j < num_threads; j++) {
-            int start_idx = thread_data[j].Pos[i];
-            int end_idx = start_idx + thread_data[j].Part_sizes[i];
-            // printf("de %d até %d\n", start_idx, end_idx);
-
-            printf("start:%d, end:%d\n", start_idx, end_idx);
-
-            printf("thr%d: ", j);
-
-            for (int k = start_idx; k < end_idx; k++) {
-                printf("%lld ", thread_data[j].Output[k]);
-                Output[out_idx] = thread_data[j].Output[k];
-                out_idx++;
-            }
-            printf("\n");
-
-            // memcpy(&Output[out_idx], &thread_data[j].Output[start_idx], 
-            //        (end_idx - start_idx) * sizeof(llong));
-
-            // out_idx += (end_idx - start_idx);
+    for (int i = 0; i < num_threads; i++) {
+        for (int j = 0; j < P_size; j++) {
+            partitions_start[j] += thread_data[i].Pos[j];
+            partitions_sizes[j] += thread_data[i].Part_sizes[j];
         }
     }
+    printf("part inits: ");
+    print_array_int(partitions_start, P_size);
+
+    printf("part sizes: ");
+    print_array_int(partitions_sizes, P_size);
+
+    // for (int i = 0; i < )
 }
 
 void multi_partition(llong *Input, int Input_size, 
