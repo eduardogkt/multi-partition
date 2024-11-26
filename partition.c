@@ -55,6 +55,7 @@ void find_partition_sizes(thread_data_t *data) {
     int out_idx = 0;
     data->Pos[0] = 0;
     for (int i = 0; i < data->P_size; i++) {
+        printf("achando partições de P = %lld\n", data->P[i]);
         for (int j = out_idx; j < data->Input_size; j++) {
             if (data->Output[j] < data->P[i]) {
                 data->Part_sizes[i]++;
@@ -77,9 +78,20 @@ void *partitionate(void *arg) {
 
         // cria uma copia ordenada do vetor de entrada
         memcpy(data->Output, data->Input, sizeof(llong) * data->Input_size);
-        qsort(data->Output, data->Input_size, sizeof(llong), compar);
+        
+        printf("Output ant %d: ", data->id);
+        print_array_llong(data->Output, data->Input_size);
+
+        qsort(data->Output, data->Input_size, sizeof(llong), compar); /// porque não ta ordenando corretamete???
 
         find_partition_sizes(data);
+
+        printf("Output %d: ", data->id);
+        print_array_llong(data->Output, data->Input_size);
+        printf("Parts %d: ", data->id);
+        print_array_int(data->Part_sizes, data->P_size);
+        printf("Pos %d: ", data->id);
+        print_array_int(data->Pos, data->P_size);
 
         pthread_barrier_wait(&barrier_end);
     }
@@ -147,11 +159,12 @@ void print_output_parts(int num_threads, thread_data_t *data) {
 }
 
 void join_partitions(llong *Output, llong *P, int P_size, int *Pos, int num_threads) {
+    printf("JUNTANDO...\n");
     int out_idx = 0;
 
     // passa por cada thread juntando a partição p
     for (int i = 0; i < P_size; i++) {
-        // printf("\npartição %d [%lld, %lld]:\n", i, i == 0 ? 0 : P[i-1], P[i]);
+        printf("\npartição %d [%lld, %lld]:\n", i, i == 0 ? 0 : P[i-1], P[i]);
 
         Pos[i] = out_idx;
         for (int j = 0; j < num_threads; j++) {
@@ -159,10 +172,21 @@ void join_partitions(llong *Output, llong *P, int P_size, int *Pos, int num_thre
             int end_idx = start_idx + thread_data[j].Part_sizes[i];
             // printf("de %d até %d\n", start_idx, end_idx);
 
-            memcpy(&Output[out_idx], &thread_data[j].Output[start_idx], 
-                   (end_idx - start_idx) * sizeof(llong));
+            printf("start:%d, end:%d\n", start_idx, end_idx);
 
-            out_idx += (end_idx - start_idx);
+            printf("thr%d: ", j);
+
+            for (int k = start_idx; k < end_idx; k++) {
+                printf("%lld ", thread_data[j].Output[k]);
+                Output[out_idx] = thread_data[j].Output[k];
+                out_idx++;
+            }
+            printf("\n");
+
+            // memcpy(&Output[out_idx], &thread_data[j].Output[start_idx], 
+            //        (end_idx - start_idx) * sizeof(llong));
+
+            // out_idx += (end_idx - start_idx);
         }
     }
 }
