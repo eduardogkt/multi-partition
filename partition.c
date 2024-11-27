@@ -96,19 +96,61 @@ void *partitionate(void *arg) {
             data->Pos[i] = data->Pos[i-1] + data->Part_sizes[i-1];
         }
 
-        printf("Input %d: ", data->id);
-        print_array_llong(data->Input, data->Input_size);
-        printf("Parts  %d: ", data->id);
-        print_array_int(data->Part_sizes, data->P_size);
-        printf("Pos    %d: ", data->id);
-        print_array_int(data->Pos, data->P_size);
-        printf("partitions %d: ", data->id);
-        print_array_int(data->partitions, data->Input_size);
+        // printf("Input %d: ", data->id);
+        // print_array_llong(data->Input, data->Input_size);
+        // printf("Parts  %d: ", data->id);
+        // print_array_int(data->Part_sizes, data->P_size);
+        // printf("Pos    %d: ", data->id);
+        // print_array_int(data->Pos, data->P_size);
+        // printf("partitions %d: ", data->id);
+        // print_array_int(data->partitions, data->Input_size);
 
         pthread_barrier_wait(&barrier_end);
     }
     pthread_exit(NULL);
 }
+
+/*
+void *partitionate(void *arg) {
+    thread_data_t *data = (thread_data_t *) arg;
+
+    while (1) {
+        // Sincronização inicial
+        pthread_barrier_wait(&barrier_start);
+
+        // Reinicializar tamanhos das partições
+        memset(data->Part_sizes, 0, data->P_size * sizeof(int));
+
+        // Particionar usando busca binária
+        for (int i = 0; i < data->Input_size; i++) {
+            int low = 0, high = data->P_size - 1;
+            while (low <= high) {
+                int mid = low + (high - low) / 2;
+                if (data->Input[i] < data->P[mid]) {
+                    high = mid - 1;
+                } else {
+                    low = mid + 1;
+                }
+            }
+            // O índice 'low' é a partição correspondente
+            int partition_idx = low;
+            data->Part_sizes[partition_idx]++;
+            data->partitions[i] = partition_idx;
+        }
+
+        // Atualizar posições das partições
+        data->Pos[0] = 0;
+        for (int i = 1; i < data->P_size; i++) {
+            data->Pos[i] = data->Pos[i - 1] + data->Part_sizes[i - 1];
+        }
+
+        // Sincronização final
+        pthread_barrier_wait(&barrier_end);
+    }
+
+    pthread_exit(NULL);
+}
+ */
 
 void set_vectors(thread_data_t *thread_data, llong *Input, llong *P, int P_size, llong *Output) {
     thread_data->Input = &Input[thread_data->Input_start];
@@ -204,7 +246,7 @@ void join_partitions(llong *Output, llong *P, int P_size, int *Pos, int num_thre
     // }
 
 
-    printf("JUNTANDO...\n");
+    // printf("JUNTANDO...\n");
 
     int partitions_start[P_size]; // vetor de indices de incio de partição
     int partitions_sizes[P_size]; // vetor tamanhos de cada partição
@@ -215,15 +257,25 @@ void join_partitions(llong *Output, llong *P, int P_size, int *Pos, int num_thre
         for (int j = 0; j < P_size; j++) {
             partitions_start[j] += thread_data[i].Pos[j];
             partitions_sizes[j] += thread_data[i].Part_sizes[j];
+            Pos[j] = partitions_start[j];
         }
     }
-    printf("part inits: ");
-    print_array_int(partitions_start, P_size);
+    // printf("part inits: ");
+    // print_array_int(partitions_start, P_size);
 
-    printf("part sizes: ");
-    print_array_int(partitions_sizes, P_size);
+    // printf("part sizes: ");
+    // print_array_int(partitions_sizes, P_size);
 
-    // for (int i = 0; i < )
+    // printf("INSERINDO...\n");
+    for (int i = 0; i < num_threads; i++) {
+        for (int j = 0; j < thread_data[i].Input_size; j++) {
+            int partition = thread_data[i].partitions[j];            
+            // printf("%lld ", thread_data[i].Input[j]);
+
+            Output[partitions_start[partition]++] = thread_data[i].Input[j];
+        }
+    }
+    // printf("\n");
 }
 
 void multi_partition(llong *Input, int Input_size, 

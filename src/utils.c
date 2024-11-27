@@ -40,8 +40,8 @@ long long geraAleatorioLL() {
     return v;
 }
 
-#define TEST_EXEMPLO 1
-// #define TEST_ALEAT 1
+// #define TEST_EXEMPLO 1
+#define TEST_ALEAT 1
 
 #if TEST_EXEMPLO
 int in[100] = {95, 63, 82, 73, 14, 46, 52, 36, 31, 43, 73, 45, 73, 62}; // {8, 4, 7, 11, 3, 7, 7, 13, 44, 46, 44, 100, 100, 110 };
