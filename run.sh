@@ -23,8 +23,8 @@ result_file=results/results_${p_size}_${input_size}.txt
 
 echo "Executando 10x com Input $input_size elementos, P $p_size elementos"
 
-# roda 10 testes para cada quantidade de threads
-for run in {1..10}; do
+# roda 5 testes para cada quantidade de threads
+for run in {1..5}; do
     echo -n "Medição $run: "
 
     for threads in {1..8}; do

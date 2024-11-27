@@ -40,12 +40,12 @@ long long geraAleatorioLL() {
     return v;
 }
 
-// #define TEST_EXEMPLO 1
+// #define TEST_EXEMPLO  1
 #define TEST_ALEAT 1
 
 #if TEST_EXEMPLO
-int in[100] = {95, 63, 82, 73, 14, 46, 52, 36, 31, 43, 73, 45, 73, 62}; // {8, 4, 7, 11, 3, 7, 7, 13, 44, 46, 44, 100, 100, 110 };
-llong p[100] = {19, 22, 56, LLONG_MAX}; // {12, 70, 90, LLONG_MAX}; 
+int in[100] = {76, 73, 29, 91, 99, 14, 54, 35, 49, 80, 19, 91, 64, 13, 37, 44, 17, 50, 37, 57};
+llong p[100] = {18, 57, 73, LONG_MAX}; 
 #endif
 
 void initialize_global_arrays(llong *InputG, int Input_size, llong *PG, int P_size) {

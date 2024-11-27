@@ -3,13 +3,11 @@
 #include <stdio.h>
 
 // verifica se as partições criados por multi_partition estão corretas
-int verifica_particoes(llong* Input, int Input_size, 
-                        llong *P, int P_size, 
-                        llong *Output, int *Pos) {
+void verifica_particoes(long long *Input, int n, long long *P, int np, long long *Output, int *Pos) {
 
-    for (int pos = 0; pos < P_size; pos++) {
+    for (int pos = 0; pos < np; pos++) {
         int part_start_idx = Pos[pos];
-        int part_end_idx = pos == P_size - 1 ? Input_size : Pos[pos+1];
+        int part_end_idx = pos == np - 1 ? n : Pos[pos+1];
 
         llong part_start = pos == 0 ? 0 : P[pos-1];
         llong part_end = P[pos]; 
@@ -29,10 +27,9 @@ int verifica_particoes(llong* Input, int Input_size,
             }
             else {
                 printf("\nPARTIÇÃO [%lld, %lld) INCORRETA\n\n", part_start, part_end);
-                return 0;
+                return;
             }
         }
     }
     printf("\nPARTICIONAMENTO CORRETO\n\n");
-    return 1;
 }
