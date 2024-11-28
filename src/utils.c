@@ -41,7 +41,7 @@ long long geraAleatorioLL() {
 }
 
 // #define TEST_EXEMPLO  1
-#define TEST_ALEAT 1
+// #define TEST_ALEAT 1
 
 #if TEST_EXEMPLO
 int in[100] = {76, 73, 29, 91, 99, 14, 54, 35, 49, 80, 19, 91, 64, 13, 37, 44, 17, 50, 37, 57};
@@ -56,9 +56,9 @@ void initialize_global_arrays(llong *InputG, int Input_size, llong *PG, int P_si
                 #if TEST_EXEMPLO
                 InputG[j] = in[j];
                 #elif TEST_ALEAT
-                InputG[j] = geraAleatorioLL();
-                #else
                 InputG[j] = rand() % 100;
+                #else
+                InputG[j] = geraAleatorioLL();
                 #endif
             }
             else {
@@ -68,19 +68,18 @@ void initialize_global_arrays(llong *InputG, int Input_size, llong *PG, int P_si
     }
 
     // a primeira iteração é isolada porque os valores precisam ser ordenados
-    for (llong i = 0; i < P_size; i++) {
+    for (llong i = 0; i < P_size - 1; i++) {
         #if TEST_EXEMPLO
         PG[i] = p[i];
         #elif TEST_ALEAT
-        PG[i] = geraAleatorioLL();
-        #else
         PG[i] = rand() % 100;
+        #else
+        PG[i] = geraAleatorioLL();
         #endif
     }
     PG[P_size - 1] = LLONG_MAX;
-    #ifndef TEST_EXEMPLO
     qsort(PG, P_size - 1, sizeof(llong), compar);
-    #endif
+
     // fazendo replicas até encher PG ou ser suficiente para o número de testes 
     for (llong i = 1; (i < MAX_SIZE / P_size) && (i <= N_TESTS); i++) {
         for (llong j = 0; j < P_size; j++) {

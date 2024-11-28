@@ -21,7 +21,7 @@ declare -A vazoes
 
 result_file=results/results_${p_size}_${input_size}.txt
 
-echo "Executando 10x com Input $input_size elementos, P $p_size elementos"
+echo "Executando 5x com Input $input_size elementos, P $p_size elementos"
 
 # roda 5 testes para cada quantidade de threads
 for run in {1..5}; do
@@ -41,12 +41,12 @@ for run in {1..5}; do
     echo
 done
 
-# gera o arquivo de resultados no formato desejado
+# gera o arquivo com resultados
 {
     echo "Tempo (s) input[$input_size] p[$p_size]"
     echo "num_threads, 1, 2, 3, 4, 5, 6, 7, 8"
 
-    for run in {1..10}; do
+    for run in {1..5}; do
         echo -n "run $run"
         for threads in {1..8}; do
             echo -n ", ${tempos[$run,$threads]}"
@@ -56,10 +56,10 @@ done
 
     echo
 
-    echo "Vazao (MOPS) input[$input_size] p[$p_size]"
+    echo "Vazao (MEPS) input[$input_size] p[$p_size]"
     echo "num_threads, 1, 2, 3, 4, 5, 6, 7, 8"
 
-    for run in {1..10}; do
+    for run in {1..5}; do
         echo -n "run $run"
         for threads in {1..8}; do
             echo -n ", ${vazoes[$run,$threads]}"

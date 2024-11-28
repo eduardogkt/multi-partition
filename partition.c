@@ -49,76 +49,42 @@ pthread_barrier_t barrier_start, barrier_end;
 
 chronometer_t chrono;
 
+void find_partitions(thread_data_t *data) {
+    // zerando tamanhos das partições
+    memset(data->Part_sizes, 0, data->P_size * sizeof(int));
+
+    // particiona o vetor Input, indicando em Partitions
+    // a qual partição o valor pertence
+    for (int i = 0; i < data->Input_size; i++) {
+        // verifica em qual partição o valor atual pertence
+        for (int j = 0; j < data->P_size; j++) {
+            if (data->Input[i] < data->P[j]) {
+                data->Part_sizes[j]++;
+                data->Partitions[i] = j;
+                break;
+            }
+        }
+    }
+
+    // atualizar as posições das partições
+    data->Pos[0] = 0;
+    for (int i = 1; i < data->P_size; i++) {
+        data->Pos[i] = data->Pos[i-1] + data->Part_sizes[i-1];
+    }
+}
+
 void *partitionate(void *arg) {
     while (1) {
         thread_data_t *data = (thread_data_t *) arg;
 
         pthread_barrier_wait(&barrier_start);
 
-        // zerando tamanhos das partições
-        memset(data->Part_sizes, 0, data->P_size * sizeof(int));
-
-        // particiona o vetor Input, indicando em Partitions
-        // a qual partição o valor pertence
-        for (int i = 0; i < data->Input_size; i++) {
-            // verifica em qual partição o valor atual pertence
-            for (int j = 0; j < data->P_size; j++) {
-                if (data->Input[i] < data->P[j]) {
-                    data->Part_sizes[j]++;
-                    data->Partitions[i] = j;
-                    break;
-                }
-            }
-        }
-
-        // atualizar as posições das partições
-        data->Pos[0] = 0;
-        for (int i = 1; i < data->P_size; i++) {
-            data->Pos[i] = data->Pos[i-1] + data->Part_sizes[i-1];
-        }
+        find_partitions(data);
 
         pthread_barrier_wait(&barrier_end);
     }
     pthread_exit(NULL);
 }
-
-/*void *partitionate(void *arg) {
-    thread_data_t *data = (thread_data_t *) arg;
-
-    while (1) {
-        pthread_barrier_wait(&barrier_start);
-
-        // zerando tamanhos das partições
-        memset(data->Part_sizes, 0, data->P_size * sizeof(int));
-
-        // particionar usando busca binária
-        for (int i = 0; i < data->Input_size; i++) {
-            int low = 0, high = data->P_size - 1;
-            while (low <= high) {
-                int mid = low + (high - low) / 2;
-                if (data->Input[i] < data->P[mid]) {
-                    high = mid - 1;
-                } else {
-                    low = mid + 1;
-                }
-            }
-            // o índice low é a partição correspondente
-            int partition_idx = low;
-            data->Part_sizes[partition_idx]++;
-            data->Partitions[i] = partition_idx;
-        }
-
-        // atualizar posições das partições
-        data->Pos[0] = 0;
-        for (int i = 1; i < data->P_size; i++) {
-            data->Pos[i] = data->Pos[i - 1] + data->Part_sizes[i - 1];
-        }
-
-        pthread_barrier_wait(&barrier_end);
-    }
-
-    pthread_exit(NULL);
-}*/
 
 void set_vectors(thread_data_t *thread_data, llong *Input, llong *P, int P_size, llong *Output) {
     thread_data->Input = &Input[thread_data->Input_start];
@@ -280,8 +246,9 @@ int main(int argc, char **argv) {
         printf("\n");
         #endif
 
-        verifica_particoes(Input, Input_size, P, P_size, Output, Pos);
     }
+
+    verifica_particoes(Input, Input_size, P, P_size, Output, Pos);
 
     llong total_partitioned = (double) Input_size * N_TESTS;
     double total_time_ns = (double) chrono_gettotal(&chrono);
